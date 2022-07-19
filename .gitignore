@@ -1,0 +1,12 @@
+node_modules
+.idea
+.vscode
+.env
+bin
+build
+
+#Hardhat files
+cache
+artifacts
+
+.env
