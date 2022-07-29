@@ -23,9 +23,6 @@ describe("SimpleFi NFT collection", function () {
 
     // enable whitelister to mint NFTs for users
     await erc721.grantRole(keccak256("MINTER_ROLE"), whitelister.address);
-
-    const x = ethers.utils.keccak256(utils.toUtf8Bytes("MINTER_ROLE"));
-    console.log(x);
   });
 
   describe("ERC721", function () {
