@@ -1,0 +1,12 @@
+{
+  "description": "NFT drop test",
+  "external_url": "https://savethewhales.org",
+  "image": "ipfs://QmeUVpJt53FmiiD3kK3zheP6CaKkmwUWkNRFLsj1RXNrQ2",
+  "name": "whale ##",
+  "attributes": [
+    {
+      "trait_type": "OG Level",
+      "value": "O(M)G"
+    }
+  ]
+}

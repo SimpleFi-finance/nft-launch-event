@@ -1,7 +1,9 @@
 const dotenv = require('dotenv');
 dotenv.config();
+const keccak256 = require("keccak256");
 
-const { NFT_NAME, NFT_SYMBOL, IPFS_CID, OPENSEA_POLYGON_PROXY } = process.env;
+const { NFT_NAME, NFT_SYMBOL, IPFS_CID } = process.env;
+console.log(NFT_NAME, NFT_SYMBOL, IPFS_CID);
 
 // This is a script for deploying your contracts. You can adapt it to deploy
 // yours, or create new ones.
@@ -10,8 +12,8 @@ async function main() {
   if (network.name === "hardhat") {
     console.warn(
       "You are trying to deploy a contract to the Hardhat Network, which" +
-        "gets automatically created and destroyed every time. Use the Hardhat" +
-        " option '--network localhost'"
+      "gets automatically created and destroyed every time. Use the Hardhat" +
+      " option '--network localhost'"
     );
   }
 
@@ -24,19 +26,28 @@ async function main() {
 
   console.log("Account balance:", (await deployer.getBalance()).toString());
 
-  const NFT = await ethers.getContractFactory("SimpleFiOG");
-  const nft = await NFT.deploy(NFT_NAME, NFT_SYMBOL, `ipfs://${IPFS_CID}/`, OPENSEA_POLYGON_PROXY);
+  // deploy erc721
+  const NFT = await ethers.getContractFactory("SimpleFiLaunchNft");
+  const nft = await NFT.deploy(NFT_NAME, NFT_SYMBOL, IPFS_CID);
   await nft.deployed();
+  console.log("SimpleFiLaunchNft address:", nft.address);
 
-  console.log("NFT address:", nft.address);
+
+  // deploy whitelister
+  const WhitelisterFactory = await ethers.getContractFactory("Erc721WhitelistDistributor");
+  whitelister = await WhitelisterFactory.deploy(nft.address, []);
+  console.log("whitelister address:", whitelister.address);
+
+  // enable whitelister to mint NFTs for users
+  await nft.grantRole(keccak256("MINTER_ROLE"), whitelister.address);
 
   // We also save the contract's artifacts and address in the frontend directory
-  saveFrontendFiles(nft);
+  saveFilesForFrontend(whitelister);
 }
 
-function saveFrontendFiles(nft) {
+function saveFilesForFrontend(distributor) {
   const fs = require("fs");
-  const contractsDir = __dirname + "/../frontend/src/contracts";
+  const contractsDir = __dirname;
 
   if (!fs.existsSync(contractsDir)) {
     fs.mkdirSync(contractsDir);
@@ -44,14 +55,25 @@ function saveFrontendFiles(nft) {
 
   fs.writeFileSync(
     contractsDir + "/contract-address.json",
-    JSON.stringify({ NFT: nft.address }, undefined, 2)
+    JSON.stringify(
+      {
+        Erc721WhitelistDistributor: distributor.address,
+      },
+      undefined,
+      2
+    )
   );
 
-  const NftArtifact = artifacts.readArtifactSync("ERC721PresetMinterPauserAutoId");
-
+  const distributorArtifact = artifacts.readArtifactSync("Erc721WhitelistDistributor");
   fs.writeFileSync(
-    contractsDir + "/ERC721PresetMinterPauserAutoId.json",
-    JSON.stringify(NftArtifact, null, 2)
+    contractsDir + "/Erc721WhitelistDistributor.json",
+    JSON.stringify(distributorArtifact, null, 2)
+  );
+
+  const erc721EnumberableArtifact = artifacts.readArtifactSync("SimpleFiLaunchNft");
+  fs.writeFileSync(
+    contractsDir + "/ERC721Enumberable.json",
+    JSON.stringify(erc721EnumberableArtifact, null, 2)
   );
 }
 
